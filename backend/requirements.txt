@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+passlib[bcrypt]
+sqlalchemy<1.5
+databases[sqlite]
+pydantic<2

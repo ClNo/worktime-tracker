@@ -1,0 +1,49 @@
+---
+- name: Build and run Python Docker container
+  hosts: ubuntu_servers
+  become: yes
+  vars:
+    python_version: "3.11-slim-buster"
+    container_name: "worktime_backend_container"
+    image_name: "worktime_backend_image"
+    container_port: 9005  # Change this to your application's port
+    git_repo_url: "https://github.com/ClNo/worktime-tracker.git"  # Change this to your Git repo URL
+    app_data_dir: "app-data-dir"
+
+  tasks:
+    - name: Install Git Python package
+      pip:
+        name: gitpython
+        state: present
+
+    - name: Clone the Git repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: /tmp/python_app
+        version: master  # Specify the branch or tag you want to clone (e.g., master, main, v1.0, etc.)
+
+    # - name: Ensure the data directory exists on the host
+    #   file:
+    #     path: "{{ data_dir }}"
+    #     state: directory
+
+    - name: Build the Docker image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        path: /tmp/python_app/backend  # only use the backend here containing also the Dockerfile
+        buildargs:
+          PYTHON_VERSION: "{{ python_version }}"
+      register: docker_image
+
+    - name: Run the Docker container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ docker_image.image }}"
+        ports:
+          - "{{ container_port }}:{{ container_port }}"
+        volumes:
+          - "{{ data_dir }}:/app/data"  # Mount the host data directory as /app/data inside the container
+        env:
+          WTT_CONFIGPATH: "/app/config/config.json"
+        command: "uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port {{ container_port }}"
+        state: started

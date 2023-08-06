@@ -1,0 +1,6 @@
+{
+	"mouse_timeout_min": 5,
+	"report_host": "192.168.21.67:8000",
+	"report_event_route": "/eventlog",
+	"report_user": "cl"
+}
